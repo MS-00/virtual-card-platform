@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -26,25 +29,53 @@ public class CardController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping
+    public ResponseEntity<List<CardResponse>> listCards() {
+        log.info("Fetching cards");
+
+        List<CardResponse> cards = cardService.getAllCards();
+        return ResponseEntity.ok(cards);
+    }
+
     @PostMapping("/{id}/spend")
-    public void spend(@PathVariable UUID id, @Valid @RequestBody AmountRequest request) {
-        // TODO
+    public ResponseEntity<Map<String, String>> spend(@PathVariable UUID id, @Valid @RequestBody AmountRequest request) {
+        log.info("Spend on card ID: {} - amount {}", id, request.getAmount());
+
+        cardService.spend(id, request);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Spend successful");
+
+        return ResponseEntity.ok(response);
+
     }
 
     @PostMapping("/{id}/topup")
-    public void topup(@PathVariable UUID id, @Valid @RequestBody AmountRequest request) {
-        // TODO
+    public ResponseEntity<Map<String, String>> topup(@PathVariable UUID id, @Valid @RequestBody AmountRequest request) {
+        log.info("topup card ID: {} - amount {}", id, request.getAmount());
+
+        cardService.topup(id, request);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Topup successful");
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CardResponse> getCard(@PathVariable UUID id) {
+        log.info("Fetching card ID: {}", id);
+
         CardResponse response = cardService.getCard(id);
 
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}/transactions")
-    public void getTransactions(@PathVariable UUID id) {
-        // TODO
+    public ResponseEntity<List<TransactionResponse>> getTransactions(@PathVariable UUID id) {
+        log.info("Fetching transactions for card ID: {}", id);
+
+        List<TransactionResponse> response = cardService.getTransactions(id);
+        return ResponseEntity.ok(response);
     }
 }

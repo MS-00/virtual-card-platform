@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Virtual Card Platform API Tester (Improved)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2em;
+        }
+
+        input,
+        button,
+        select {
+            margin: 0.5em 0;
+            padding: 0.5em;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+        }
+
+        .section {
+            border: 1px solid #ccc;
+            padding: 1em;
+            margin-bottom: 2em;
+            border-radius: 8px;
+        }
+
+        .response {
+            background: #f8f8f8;
+            border: 1px solid #eee;
+            padding: 0.5em;
+            margin-top: 0.5em;
+        }
+
+        .card-list {
+            margin: 1em 0;
+        }
+
+        .card-id {
+            cursor: pointer;
+            color: #007bff;
+            text-decoration: underline;
+        }
+
+        .card-id:hover {
+            color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Virtual Card Platform API Tester (Improved)</h1>
+
+    <div class="section">
+        <h2>Create Card</h2>
+        <input id="cardholderName" placeholder="Cardholder Name" />
+        <input id="initialBalance" type="number" placeholder="Initial Balance" />
+        <button onclick="createCard()">Create Card</button>
+        <pre class="response" id="createCardResponse"></pre>
+    </div>
+
+    <div class="section">
+        <h2>All Cards</h2>
+        <button onclick="listCards()">List All Cards</button>
+        <div class="card-list" id="cardList"></div>
+    </div>
+
+    <div class="section">
+        <h2>Spend</h2>
+        <input id="spendCardId" placeholder="Card ID" />
+        <input id="spendAmount" type="number" placeholder="Amount" />
+        <button onclick="spend()">Spend</button>
+        <pre class="response" id="spendResponse"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Top Up</h2>
+        <input id="topupCardId" placeholder="Card ID" />
+        <input id="topupAmount" type="number" placeholder="Amount" />
+        <button onclick="topup()">Top Up</button>
+        <pre class="response" id="topupResponse"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Get Card</h2>
+        <input id="getCardId" placeholder="Card ID" />
+        <button onclick="getCard()">Get Card</button>
+        <pre class="response" id="getCardResponse"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Get Transactions</h2>
+        <input id="getTxCardId" placeholder="Card ID" />
+        <button onclick="getTransactions()">Get Transactions</button>
+        <pre class="response" id="getTransactionsResponse"></pre>
+    </div>
+
+    <script>
+        const apiBase = 'http://localhost:8080/cards';
+
+        function showResponse(id, data) {
+            // Recursively format all numbers to 2 decimals
+            function formatNumbers(obj) {
+                if (Array.isArray(obj)) {
+                    return obj.map(formatNumbers);
+                } else if (obj && typeof obj === 'object') {
+                    const formatted = {};
+                    for (const key in obj) {
+                        if (typeof obj[key] === 'number') {
+                            formatted[key] = obj[key].toFixed(2);
+                        } else {
+                            formatted[key] = formatNumbers(obj[key]);
+                        }
+                    }
+                    return formatted;
+                }
+                return obj;
+            }
+
+            const formattedData = formatNumbers(data);
+
+            document.getElementById(id).textContent = typeof formattedData === 'string'
+                ? formattedData
+                : JSON.stringify(formattedData, null, 2);
+        }
+
+        async function createCard() {
+            document.getElementById('createCardResponse').textContent = "";
+
+            const name = document.getElementById('cardholderName').value;
+            const balance = document.getElementById('initialBalance').value;
+
+            const res = await fetch(apiBase, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cardholderName: name, initialBalance: balance })
+            });
+
+            const data = await res.json();
+
+            showResponse('createCardResponse', data);
+
+            listCards();
+        }
+
+        async function listCards() {
+            const res = await fetch(apiBase);
+
+            const cards = await res.json();
+
+            const listDiv = document.getElementById('cardList');
+
+            if (Array.isArray(cards)) {
+                listDiv.innerHTML = cards.map(card =>
+                    `<span class="card-id" onclick="copyCardId('${card.id}')">${card.id}</span> - ${card.cardholderName} (Balance: ${card.balance.toFixed(2)})<br/>`
+                ).join('');
+            } else {
+                listDiv.textContent = 'No cards found or error fetching cards.';
+            }
+        }
+
+        function copyCardId(id) {
+            navigator.clipboard.writeText(id);
+            document.getElementById('spendCardId').value = id;
+            document.getElementById('topupCardId').value = id;
+            document.getElementById('getCardId').value = id;
+            document.getElementById('getTxCardId').value = id;
+        }
+
+        async function spend() {
+            document.getElementById('spendResponse').textContent = "";
+
+            const id = document.getElementById('spendCardId').value;
+            const amount = document.getElementById('spendAmount').value;
+
+            const res = await fetch(`${apiBase}/${id}/spend`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: amount })
+            });
+
+            showResponse('spendResponse', await res.json());
+        }
+
+        async function topup() {
+            document.getElementById('topupResponse').textContent = "";
+
+            const id = document.getElementById('topupCardId').value;
+            const amount = document.getElementById('topupAmount').value;
+
+            const res = await fetch(`${apiBase}/${id}/topup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: amount })
+            });
+
+            showResponse('topupResponse', await res.json());
+        }
+
+        async function getCard() {
+            document.getElementById('getCardResponse').textContent = "";
+
+
+            const id = document.getElementById('getCardId').value;
+
+            const res = await fetch(`${apiBase}/${id}`);
+
+            showResponse('getCardResponse', await res.json());
+        }
+
+        async function getTransactions() {
+            document.getElementById('getTransactionsResponse').textContent = "";
+
+            const id = document.getElementById('getTxCardId').value;
+
+            const res = await fetch(`${apiBase}/${id}/transactions`);
+
+            showResponse('getTransactionsResponse', await res.json());
+        }
+    </script>
+</body>
+
+</html>
