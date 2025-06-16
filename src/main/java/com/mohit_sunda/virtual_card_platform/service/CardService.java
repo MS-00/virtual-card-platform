@@ -1,6 +1,7 @@
 package com.mohit_sunda.virtual_card_platform.service;
 
 import com.mohit_sunda.virtual_card_platform.dto.*;
+import com.mohit_sunda.virtual_card_platform.exception.CardBlockedException;
 import com.mohit_sunda.virtual_card_platform.exception.CardNotFoundException;
 import com.mohit_sunda.virtual_card_platform.exception.InsufficientBalanceException;
 import com.mohit_sunda.virtual_card_platform.exception.RateLimitExceededException;
@@ -60,6 +61,10 @@ public class CardService {
     public CardResponse spend(UUID cardId, AmountRequest request) {
         Card card = getCardOrThrow(cardId);
 
+        if (card.getStatus() == CardStatus.BLOCKED) {
+            throw new CardBlockedException("No spending allowed.");
+        }
+
         this.checkRateLimit(cardId);
 
         Object lock = cardLocks.computeIfAbsent(card.getId(), k -> new Object());
@@ -104,6 +109,10 @@ public class CardService {
     public CardResponse topup(UUID cardId, AmountRequest request) {
         Card card = getCardOrThrow(cardId);
 
+        if (card.getStatus() == CardStatus.BLOCKED) {
+            throw new CardBlockedException("No funding allowed.");
+        }
+
         Object lock = cardLocks.computeIfAbsent(card.getId(), k -> new Object());
 
         synchronized (lock) {
@@ -136,5 +145,17 @@ public class CardService {
                 .stream()
                 .map(CardMapper::toCardResponse)
                 .toList();
+    }
+
+    public void blockCard(UUID cardId) {
+        Card card = getCardOrThrow(cardId);
+        card.setStatus(CardStatus.BLOCKED);
+        cardRepository.save(card);
+    }
+
+    public void unblockCard(UUID cardId) {
+        Card card = getCardOrThrow(cardId);
+        card.setStatus(CardStatus.ACTIVE);
+        cardRepository.save(card);
     }
 }

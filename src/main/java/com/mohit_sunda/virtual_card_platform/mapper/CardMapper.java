@@ -14,6 +14,7 @@ public class CardMapper {
         resp.setId(card.getId());
         resp.setCardholderName(card.getCardholderName());
         resp.setBalance(CardMapper.setAmount(card.getBalance()));
+        resp.setStatus(card.getStatus());
         resp.setCreatedAt(card.getCreatedAt());
         return resp;
     }

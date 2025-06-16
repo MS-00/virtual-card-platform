@@ -53,13 +53,16 @@
 </head>
 
 <body>
-    <h1>Virtual Card Platform API Tester (Improved)</h1>
+    <h1>Virtual Card Platform API Tester</h1>
 
     <div class="section">
         <h2>Create Card</h2>
         <input id="cardholderName" placeholder="Cardholder Name" />
         <input id="initialBalance" type="number" placeholder="Initial Balance" />
         <button onclick="createCard()">Create Card</button>
+        <input id="statusCardId" placeholder="Card ID" style="width: 250px; margin-left: 2em;" />
+        <button onclick="blockCard()">Block</button>
+        <button onclick="unblockCard()">Unblock</button>
         <pre class="response" id="createCardResponse"></pre>
     </div>
 
@@ -147,6 +150,26 @@
             listCards();
         }
 
+        async function blockCard() {
+            const id = document.getElementById('statusCardId').value;
+
+            if (!id) return alert('Enter Card ID to block');
+
+            const res = await fetch(`${apiBase}/${id}/block`, { method: 'PATCH' });
+
+            showResponse('createCardResponse', await res.json());
+        }
+
+        async function unblockCard() {
+            const id = document.getElementById('statusCardId').value;
+
+            if (!id) return alert('Enter Card ID to unblock');
+
+            const res = await fetch(`${apiBase}/${id}/unblock`, { method: 'PATCH' });
+
+            showResponse('createCardResponse', await res.json());
+        }
+
         async function listCards() {
             const res = await fetch(apiBase);
 
@@ -156,7 +179,7 @@
 
             if (Array.isArray(cards)) {
                 listDiv.innerHTML = cards.map(card =>
-                    `<span class="card-id" onclick="copyCardId('${card.id}')">${card.id}</span> - ${card.cardholderName} (Balance: ${card.balance.toFixed(2)})<br/>`
+                    `<span class="card-id" onclick="copyCardId('${card.id}')">${card.id}</span> - ${card.cardholderName} (Balance: ${card.balance.toFixed(2)}, Status: ${card.status})<br/>`
                 ).join('');
             } else {
                 listDiv.textContent = 'No cards found or error fetching cards.';
@@ -169,6 +192,7 @@
             document.getElementById('topupCardId').value = id;
             document.getElementById('getCardId').value = id;
             document.getElementById('getTxCardId').value = id;
+            document.getElementById('statusCardId').value = id;
         }
 
         async function spend() {

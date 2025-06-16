@@ -18,5 +18,8 @@ public class Card {
 
     private BigDecimal balance;
 
+    @Enumerated(EnumType.STRING)
+    private CardStatus status = CardStatus.ACTIVE;
+
     private Timestamp createdAt;
 }

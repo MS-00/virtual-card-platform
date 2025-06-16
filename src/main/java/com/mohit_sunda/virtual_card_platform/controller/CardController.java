@@ -8,9 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -38,26 +36,26 @@ public class CardController {
     }
 
     @PostMapping("/{id}/spend")
-    public ResponseEntity<Map<String, String>> spend(@PathVariable UUID id, @Valid @RequestBody AmountRequest request) {
+    public ResponseEntity<ResponseWithMessage> spend(@PathVariable UUID id, @Valid @RequestBody AmountRequest request) {
         log.info("Spend on card ID: {} - amount {}", id, request.getAmount());
 
         cardService.spend(id, request);
 
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Spend successful");
+        ResponseWithMessage response = new ResponseWithMessage();
+        response.setMessage("Spend successful");
 
         return ResponseEntity.ok(response);
 
     }
 
     @PostMapping("/{id}/topup")
-    public ResponseEntity<Map<String, String>> topup(@PathVariable UUID id, @Valid @RequestBody AmountRequest request) {
+    public ResponseEntity<ResponseWithMessage> topup(@PathVariable UUID id, @Valid @RequestBody AmountRequest request) {
         log.info("topup card ID: {} - amount {}", id, request.getAmount());
 
         cardService.topup(id, request);
 
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Topup successful");
+        ResponseWithMessage response = new ResponseWithMessage();
+        response.setMessage("Topup successful");
 
         return ResponseEntity.ok(response);
     }
@@ -77,5 +75,29 @@ public class CardController {
 
         List<TransactionResponse> response = cardService.getTransactions(id);
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/block")
+    public ResponseEntity<ResponseWithMessage> blockCard(@PathVariable UUID id) {
+        log.info("Block card ID: {}", id);
+
+        cardService.blockCard(id);
+
+        ResponseWithMessage response = new ResponseWithMessage();
+        response.setMessage("Card blocked successfully");
+
+        return ResponseEntity.ok().body(response);
+    }
+
+    @PatchMapping("/{id}/unblock")
+    public ResponseEntity<ResponseWithMessage> unblockCard(@PathVariable UUID id) {
+        log.info("Active card ID: {}", id);
+
+        cardService.unblockCard(id);
+
+        ResponseWithMessage response = new ResponseWithMessage();
+        response.setMessage("Card unblocked successfully");
+
+        return ResponseEntity.ok().body(response);
     }
 }
