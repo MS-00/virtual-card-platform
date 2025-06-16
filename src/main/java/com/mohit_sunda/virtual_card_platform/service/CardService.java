@@ -41,6 +41,15 @@ public class CardService {
 
         card = cardRepository.save(card);
 
+        Transaction tx = new Transaction();
+
+        tx.setCard(card);
+        tx.setType(TransactionType.INITIAL);
+        tx.setAmount(request.getInitialBalance());
+        tx.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+
+        transactionRepository.save(tx);
+
         return CardMapper.toCardResponse(card);
     }
 
