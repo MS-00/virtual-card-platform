@@ -19,7 +19,7 @@ This application is a backend platform for issuing and managing virtual cards. U
 
 Open the tester page in your browser:
 
-[API Tester with Status Control](http://localhost:8080/api-tester-status.html)
+[API Tester](http://localhost:8080/api-tester.html)
 
 - After creating a card, click its ID in the cards list to auto-fill all other fields.
 - Use the Block/Unblock buttons to change card status.
@@ -40,7 +40,7 @@ Open the tester page in your browser:
 
 3. **Access the API tester:**
 
-    Open [http://localhost:8080/api-tester-status.html](http://localhost:8080/api-tester-status.html)
+    Open [http://localhost:8080/api-tester.html](http://localhost:8080/api-tester.html)
 
 ## Improvements & Limitations
 
