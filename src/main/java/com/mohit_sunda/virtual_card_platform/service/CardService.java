@@ -3,14 +3,16 @@ package com.mohit_sunda.virtual_card_platform.service;
 import com.mohit_sunda.virtual_card_platform.dto.*;
 import com.mohit_sunda.virtual_card_platform.exception.CardNotFoundException;
 import com.mohit_sunda.virtual_card_platform.exception.InsufficientBalanceException;
+import com.mohit_sunda.virtual_card_platform.exception.RateLimitExceededException;
 import com.mohit_sunda.virtual_card_platform.model.*;
 import com.mohit_sunda.virtual_card_platform.repository.*;
 import com.mohit_sunda.virtual_card_platform.mapper.CardMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,6 +24,11 @@ public class CardService {
     private final TransactionRepository transactionRepository;
 
     private static final ConcurrentHashMap<UUID, Object> cardLocks = new ConcurrentHashMap<>();
+
+    private static final ConcurrentHashMap<UUID, List<Long>> spendTimestamps = new ConcurrentHashMap<>();
+
+    @Value("${card.spend.max-per-minute}")
+    private int maxSpendsPerMinute;
 
     @Transactional
     public CardResponse createCard(CreateCardRequest request) {
@@ -53,6 +60,8 @@ public class CardService {
     public CardResponse spend(UUID cardId, AmountRequest request) {
         Card card = getCardOrThrow(cardId);
 
+        this.checkRateLimit(cardId);
+
         Object lock = cardLocks.computeIfAbsent(card.getId(), k -> new Object());
 
         synchronized (lock) {
@@ -73,6 +82,22 @@ public class CardService {
 
             return CardMapper.toCardResponse(card);
         }
+    }
+
+    public void checkRateLimit(UUID cardId) {
+        long now = System.currentTimeMillis();
+        spendTimestamps.putIfAbsent(cardId, new ArrayList<>());
+        List<Long> timestamps = spendTimestamps.get(cardId);
+
+        // Remove timestamps older than 1 minute
+        timestamps.removeIf(ts -> now - ts > 60_000);
+
+        if (timestamps.size() >= maxSpendsPerMinute) {
+            throw new RateLimitExceededException(
+                    "Max " + maxSpendsPerMinute + " spends per minute exceeded for this card.");
+        }
+
+        timestamps.add(now);
     }
 
     @Transactional
